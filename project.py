@@ -1,5 +1,6 @@
-import pandas as pd
-import yfinance as yf
+import os
+
+import requests
 
 sp500 = "^GSPC"
 
@@ -9,26 +10,21 @@ S&P 500 ticker =
 """
 
 
-# fnc to load csv file
-def load_csv(filepath):
+def download_fred_csv(indicator, save_path):
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={indicator}"
+
     try:
-        data = pd.read_csv(filepath)
-        print("Data loaded")
-        return data
+        response = requests.get(url)
+        response.raise_for_status()
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "wb") as f:
+            f.write(response.content)
+        print(f"Downloaded {indicator} data to {save_path}")
     except Exception as e:
-        print(f"Error loading CSV file: {e}")
-        return None
+        print(f"Failed to download data for {indicator}: {e}")
 
 
-def get_stock_data(ticker, start, end):
-    try:
-        stock_data = yf.download(ticker, start=start, end=end)  # S&P 500 ticker symbol
-        return stock_data
-    except Exception:
-        return None
-
-
-sp500_data = get_stock_data(sp500, "2020-01-01", "2025-01-01")
-print(sp500_data.head())
-
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    indicators = ["UNRATE", "CPIAUCSL", "INDPRO", "FEDFUNDS"]
+    for indicator in indicators:
+        download_fred_csv(indicator, f"data/raw/{indicator}.csv")
